@@ -35,18 +35,6 @@ const SELECTORS = {
 function createCopyButton() {
     if (document.getElementById('my-copy-btn')) return;
 
-    // Проверяем, что мы действительно на странице товара
-    const isProductPage = document.querySelector(SELECTORS.source.title) ||
-                         document.querySelector('h1') ||
-                         document.querySelector('.product-title') ||
-                         document.querySelector('.product-page') ||
-                         document.querySelector('[data-page="product"]');
-
-    if (!isProductPage) {
-        console.log('Не нашел страницу товара, кнопка не создана');
-        return;
-    }
-
     const btn = document.createElement('button');
     btn.id = 'my-copy-btn';
     btn.innerText = '📋 COPY FULL';
@@ -54,19 +42,14 @@ function createCopyButton() {
     btn.title = 'Скопировать данные товара';
     btn.onclick = copyProductData;
     btn.style.zIndex = '99999'; // Убедимся, что кнопка всегда видна
+    btn.style.position = 'fixed';
+    btn.style.bottom = '20px';
+    btn.style.right = '20px';
     document.body.appendChild(btn);
 
     console.log('Кнопка копирования создана');
 
-    // Добавим визуальную индикацию
-    setTimeout(() => {
-        if (btn) {
-            btn.style.transform = 'scale(1.1)';
-            setTimeout(() => {
-                btn.style.transform = 'scale(1)';
-            }, 200);
-        }
-    }, 100);
+    return btn;
 }
 
 function createStartButton(gameName) {
@@ -401,7 +384,6 @@ function isElementVisible(element) {
 // === 7. ГЛАВНЫЙ ЦИКЛ ===
 setInterval(() => {
     const isSellPage = window.location.href.includes('/sell');
-    const isProductPage = document.querySelector(SELECTORS.source.title);
 
     if (!isSellPage) {
         hasPassedCategory = false;
@@ -410,120 +392,128 @@ setInterval(() => {
         clearElementCache(); // Очищаем кэш при смене страницы
     }
 
-    // --- СТРАНИЦА ТОВАРА ---
-    const productTitle = document.querySelector(SELECTORS.source.title);
-    const isProductPage = productTitle ||
-                         document.querySelector('.product-page') ||
-                         document.querySelector('[data-page="product"]') ||
-                         (window.location.pathname.includes('/product/') ||
-                          window.location.pathname.includes('/item/'));
+    // Логика для страницы продажи остается в функции checkPageType
+}, 1000);
 
-    if (isProductPage) {
-        const startBtn = document.getElementById('my-start-btn');
-        const pasteBtn = document.getElementById('my-paste-btn');
-        if (startBtn) startBtn.remove();
-        if (pasteBtn) pasteBtn.remove();
-        createCopyButton();
-        return;
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Playerok Helper загружен, URL:', window.location.href);
+
+    // Создаем кнопку сразу, но делаем ее невидимой
+    createCopyButton();
+    const copyBtn = document.getElementById('my-copy-btn');
+    if (copyBtn) {
+        copyBtn.style.display = 'none'; // Скрываем сначала
     }
 
-    // --- СТРАНИЦА ПРОДАЖИ ---
-    if (isSellPage) {
-        const copyBtn = document.getElementById('my-copy-btn');
-        if (copyBtn) copyBtn.remove();
+    checkPageType(); // Проверяем тип страницы
+});
 
+// Функция для проверки типа страницы
+function checkPageType() {
+    const url = window.location.href;
+    console.log('Проверка URL:', url);
+
+    // Проверяем различные паттерны URL для страницы товара
+    const isProductPage = url.includes('/product/') ||
+                         url.includes('/item/') ||
+                         url.includes('/game/') ||
+                         url.includes('/shop/') ||
+                         (url.includes('playerok.com') && !url.includes('/sell') && !url.includes('/profile'));
+
+    console.log('Это страница товара?', isProductPage);
+
+    const copyBtn = document.getElementById('my-copy-btn');
+    if (copyBtn) {
+        if (isProductPage) {
+            copyBtn.style.display = 'block';
+            console.log('Кнопка копирования показана');
+        } else {
+            copyBtn.style.display = 'none';
+            console.log('Кнопка копирования скрыта');
+        }
+    }
+
+    // Для страницы продажи удаляем кнопку полностью
+    if (url.includes('/sell')) {
+        if (copyBtn) {
+            copyBtn.remove();
+            console.log('Кнопка копирования удалена на странице продажи');
+        }
+        // Создаем кнопки для страницы продажи
         chrome.storage.local.get(['pk_saved_product'], (result) => {
             const data = result.pk_saved_product;
-            if (!data) return;
+            if (data) {
+                // == ЭТАП 4: ФОРМА ЦЕНЫ (ФИНАЛ) ==
+                if (document.querySelector(SELECTORS.target.priceInput)) {
+                    isAutoProcessActive = false; // Выключаем "беготню" по категориям
 
-            // == ЭТАП 4: ФОРМА ЦЕНЫ (ФИНАЛ) ==
-            if (document.querySelector(SELECTORS.target.priceInput)) {
-                isAutoProcessActive = false; // Выключаем "беготню" по категориям
-
-                // Пытаемся выбрать Подтип (Ключ/Blox Fruits), если он есть в сохраненных
-                // Делаем это, только если еще не делали (hasClickedSubType)
-                if (data.subType && !hasClickedSubType) {
-                    const clicked = clickSubTypeButton(data.subType);
-                    if (clicked) {
-                        hasClickedSubType = true;
-                        showStatus(`Выбрал подраздел: ${data.subType}`);
+                    // Пытаемся выбрать Подтип (Ключ/Blox Fruits), если он есть в сохраненных
+                    // Делаем это, только если еще не делали (hasClickedSubType)
+                    if (data.subType && !hasClickedSubType) {
+                        const clicked = clickSubTypeButton(data.subType);
+                        if (clicked) {
+                            hasClickedSubType = true;
+                            showStatus(`Выбрал подраздел: ${data.subType}`);
+                        } else {
+                             showStatus(`Не нашел кнопку: ${data.subType}`);
+                        }
                     } else {
-                         showStatus(`Не нашел кнопку: ${data.subType}`);
+                        showStatus('Финиш! Жми Вставить.');
                     }
-                } else {
-                    showStatus('Финиш! Жми Вставить.');
-                }
 
-                createPasteButton();
-                return;
-            }
-
-            // == ЭТАП 1: ЖДЕМ СТАРТА ==
-            if (!isAutoProcessActive) {
-                createStartButton(data.game || 'Авто');
-                showStatus('Жду старта...');
-            }
-            // == ЭТАП 2/3: РОБОТ БЕГАЕТ ПО МЕНЮ ==
-            else {
-                if (hasPassedCategory) {
-                    showStatus('Выбирай метод/сервер руками...');
+                    createPasteButton();
                     return;
                 }
 
-                clickByText(data.game);
+                // == ЭТАП 1: ЖДЕМ СТАРТА ==
+                if (!isAutoProcessActive) {
+                    createStartButton(data.game || 'Авто');
+                    showStatus('Жду старта...');
+                }
+                // == ЭТАП 2/3: РОБОТ БЕГАЕТ ПО МЕНЮ ==
+                else {
+                    if (hasPassedCategory) {
+                        showStatus('Выбирай метод/сервер руками...');
+                        return;
+                    }
 
-                const isCategoryFound = clickByText(data.category);
+                    clickByText(data.game);
 
-                if (isCategoryFound) {
-                    showStatus(`Выбрал: ${data.category}. Жму Далее.`);
-                    const clickedNext = clickNextButton();
-                    if (clickedNext) {
-                        hasPassedCategory = true;
-                        showStatus('Категория пройдена. Робот спит.');
+                    const isCategoryFound = clickByText(data.category);
+
+                    if (isCategoryFound) {
+                        showStatus(`Выбрал: ${data.category}. Жму Далее.`);
+                        const clickedNext = clickNextButton();
+                        if (clickedNext) {
+                            hasPassedCategory = true;
+                            showStatus('Категория пройдена. Робот спит.');
+                        } else {
+                            retryCount++;
+                            if (retryCount >= MAX_RETRIES) {
+                                showError(`Не удалось нажать "Далее" после ${MAX_RETRIES} попыток`);
+                                isAutoProcessActive = false;
+                                retryCount = 0;
+                            }
+                        }
                     } else {
                         retryCount++;
                         if (retryCount >= MAX_RETRIES) {
-                            showError(`Не удалось нажать "Далее" после ${MAX_RETRIES} попыток`);
+                            showError(`Не удалось найти категорию "${data.category}" после ${MAX_RETRIES} попыток`);
                             isAutoProcessActive = false;
                             retryCount = 0;
                         }
-                    }
-                } else {
-                    retryCount++;
-                    if (retryCount >= MAX_RETRIES) {
-                        showError(`Не удалось найти категорию "${data.category}" после ${MAX_RETRIES} попыток`);
-                        isAutoProcessActive = false;
-                        retryCount = 0;
                     }
                 }
             }
         });
     }
-}, 1000);
+}
 
-// Инициализация при загрузке страницы
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Playerok Helper загружен');
+// Обновляем проверку при изменении URL (для SPA)
+window.addEventListener('popstate', checkPageType);
+window.addEventListener('pushstate', checkPageType);
+window.addEventListener('replacestate', checkPageType);
 
-    // Проверяем, не на странице ли мы уже
-    const productTitle = document.querySelector(SELECTORS.source.title);
-    const isProductPage = productTitle ||
-                         document.querySelector('.product-page') ||
-                         document.querySelector('[data-page="product"]') ||
-                         (window.location.pathname.includes('/product/') ||
-                          window.location.pathname.includes('/item/'));
-
-    if (isProductPage) {
-        console.log('Обнаружена страница товара, создаем кнопку');
-        createCopyButton();
-    }
-
-    // Также проверяем страницу продажи
-    const isSellPage = window.location.href.includes('/sell');
-    if (isSellPage) {
-        console.log('Обнаружена страница продажи');
-        // Удаляем кнопку копирования, если она есть
-        const copyBtn = document.getElementById('my-copy-btn');
-        if (copyBtn) copyBtn.remove();
-    }
-});
+// Проверяем изменения URL каждую секунду (на случай, если SPA не использует history API)
+setInterval(checkPageType, 1000);
