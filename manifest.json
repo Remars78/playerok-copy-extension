@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Playerok Helper",
+  "version": "1.0",
+  "description": "Копирование и автозаполнение товаров на Playerok",
+  "permissions": [
+    "storage", 
+    "activeTab"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["*://playerok.com/*", "*://*.playerok.com/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"]
+    }
+  ]
+}
