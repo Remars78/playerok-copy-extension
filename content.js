@@ -38,7 +38,9 @@ function createCopyButton() {
     // Проверяем, что мы действительно на странице товара
     const isProductPage = document.querySelector(SELECTORS.source.title) ||
                          document.querySelector('h1') ||
-                         document.querySelector('.product-title');
+                         document.querySelector('.product-title') ||
+                         document.querySelector('.product-page') ||
+                         document.querySelector('[data-page="product"]');
 
     if (!isProductPage) {
         console.log('Не нашел страницу товара, кнопка не создана');
@@ -51,9 +53,20 @@ function createCopyButton() {
     btn.className = 'pk-helper-btn';
     btn.title = 'Скопировать данные товара';
     btn.onclick = copyProductData;
+    btn.style.zIndex = '99999'; // Убедимся, что кнопка всегда видна
     document.body.appendChild(btn);
 
     console.log('Кнопка копирования создана');
+
+    // Добавим визуальную индикацию
+    setTimeout(() => {
+        if (btn) {
+            btn.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                btn.style.transform = 'scale(1)';
+            }, 200);
+        }
+    }, 100);
 }
 
 function createStartButton(gameName) {
@@ -399,7 +412,13 @@ setInterval(() => {
 
     // --- СТРАНИЦА ТОВАРА ---
     const productTitle = document.querySelector(SELECTORS.source.title);
-    if (productTitle) {
+    const isProductPage = productTitle ||
+                         document.querySelector('.product-page') ||
+                         document.querySelector('[data-page="product"]') ||
+                         (window.location.pathname.includes('/product/') ||
+                          window.location.pathname.includes('/item/'));
+
+    if (isProductPage) {
         const startBtn = document.getElementById('my-start-btn');
         const pasteBtn = document.getElementById('my-paste-btn');
         if (startBtn) startBtn.remove();
@@ -481,3 +500,30 @@ setInterval(() => {
         });
     }
 }, 1000);
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Playerok Helper загружен');
+
+    // Проверяем, не на странице ли мы уже
+    const productTitle = document.querySelector(SELECTORS.source.title);
+    const isProductPage = productTitle ||
+                         document.querySelector('.product-page') ||
+                         document.querySelector('[data-page="product"]') ||
+                         (window.location.pathname.includes('/product/') ||
+                          window.location.pathname.includes('/item/'));
+
+    if (isProductPage) {
+        console.log('Обнаружена страница товара, создаем кнопку');
+        createCopyButton();
+    }
+
+    // Также проверяем страницу продажи
+    const isSellPage = window.location.href.includes('/sell');
+    if (isSellPage) {
+        console.log('Обнаружена страница продажи');
+        // Удаляем кнопку копирования, если она есть
+        const copyBtn = document.getElementById('my-copy-btn');
+        if (copyBtn) copyBtn.remove();
+    }
+});
