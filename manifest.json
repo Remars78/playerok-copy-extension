@@ -1,11 +1,12 @@
 {
   "manifest_version": 3,
   "name": "Playerok Helper",
-  "version": "1.0",
-  "description": "Копирование и автозаполнение товаров на Playerok",
+  "version": "2.0",
+  "description": "Улучшенное копирование и автозаполнение товаров на Playerok с обработкой ошибок и улучшенным интерфейсом",
   "permissions": [
     "storage", 
-    "activeTab"
+    "activeTab",
+    "notifications"
   ],
   "content_scripts": [
     {

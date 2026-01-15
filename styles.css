@@ -3,7 +3,7 @@
     bottom: 20px;
     right: 20px;
     z-index: 9999;
-    padding: 10px 20px;
+    padding: 12px 24px;
     background-color: #5865F2; /* Цвет как у Discord/Playerok */
     color: white;
     border: none;
@@ -11,14 +11,64 @@
     cursor: pointer;
     font-weight: bold;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    transition: transform 0.2s;
+    transition: all 0.2s;
+    font-size: 14px;
+    opacity: 1;
 }
 
 .pk-helper-btn:hover {
     transform: scale(1.05);
+    box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+}
+
+.pk-helper-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .pk-helper-btn.paste {
-    bottom: 70px; /* Кнопка вставки чуть выше */
+    bottom: 80px; /* Кнопка вставки чуть выше */
     background-color: #28a745;
+}
+
+.pk-helper-btn.paste:hover {
+    background-color: #218838;
+}
+
+/* Анимация для кнопки успеха */
+@keyframes successPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.success-pulse {
+    animation: successPulse 0.5s ease;
+}
+
+/* Тултипы */
+.pk-helper-btn {
+    position: relative;
+}
+
+.pk-helper-btn::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    margin-bottom: 8px;
+    transition: opacity 0.2s;
+}
+
+.pk-helper-btn:hover::after {
+    opacity: 1;
 }
