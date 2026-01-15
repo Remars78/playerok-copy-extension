@@ -12,13 +12,13 @@ const MAX_RETRIES = 3;
 // === 2. НАСТРОЙКИ СЕЛЕКТОРОВ ===
 const SELECTORS = {
     source: {
-        title: 'h1.MuiTypography-root.mui-19tfdms',
-        description: 'p.MuiTypography-root.mui-1v8lgfg',
-        price: 'span.MuiTypography-root.mui-228xvi',
-        gameName: 'p.mui-16g3ovn',
-        categoryName: 'p.mui-1yyp5x8',
+        title: 'h1.MuiTypography-root.mui-19tfdms, h1.product-title, h1[itemprop="name"], h1',
+        description: 'p.MuiTypography-root.mui-1v8lgfg, .product-description, [itemprop="description"]',
+        price: 'span.MuiTypography-root.mui-228xvi, .product-price, [itemprop="price"]',
+        gameName: 'p.mui-16g3ovn, .game-name, [data-testid="game-name"]',
+        categoryName: 'p.mui-1yyp5x8, .category-name, [data-testid="category-name"]',
         // НОВОЕ: Подтип (тот самый "Ключ" или "Blox Fruits" на странице товара)
-        subTypeName: 'span.mui-1292osh'
+        subTypeName: 'span.mui-1292osh, .sub-type, [data-testid="sub-type"]'
     },
     target: {
         titleInput: 'input[name="title"]',
@@ -34,6 +34,17 @@ const SELECTORS = {
 
 function createCopyButton() {
     if (document.getElementById('my-copy-btn')) return;
+
+    // Проверяем, что мы действительно на странице товара
+    const isProductPage = document.querySelector(SELECTORS.source.title) ||
+                         document.querySelector('h1') ||
+                         document.querySelector('.product-title');
+
+    if (!isProductPage) {
+        console.log('Не нашел страницу товара, кнопка не создана');
+        return;
+    }
+
     const btn = document.createElement('button');
     btn.id = 'my-copy-btn';
     btn.innerText = '📋 COPY FULL';
@@ -41,6 +52,8 @@ function createCopyButton() {
     btn.title = 'Скопировать данные товара';
     btn.onclick = copyProductData;
     document.body.appendChild(btn);
+
+    console.log('Кнопка копирования создана');
 }
 
 function createStartButton(gameName) {
@@ -157,6 +170,15 @@ function copyProductData() {
         const gameEl = document.querySelector(SELECTORS.source.gameName);
         const catEl = document.querySelector(SELECTORS.source.categoryName);
         const subTypeEl = document.querySelector(SELECTORS.source.subTypeName);
+
+        console.log('Found elements:', {
+            title: !!titleEl,
+            description: !!descEl,
+            price: !!priceEl,
+            game: !!gameEl,
+            category: !!catEl,
+            subType: !!subTypeEl
+        });
 
         if (!titleEl) {
             showError('Ошибка: Не нашел заголовок товара');
@@ -366,7 +388,7 @@ function isElementVisible(element) {
 // === 7. ГЛАВНЫЙ ЦИКЛ ===
 setInterval(() => {
     const isSellPage = window.location.href.includes('/sell');
-    const isProductPage = getCachedElement(SELECTORS.source.title, 'productTitle');
+    const isProductPage = document.querySelector(SELECTORS.source.title);
 
     if (!isSellPage) {
         hasPassedCategory = false;
@@ -376,7 +398,8 @@ setInterval(() => {
     }
 
     // --- СТРАНИЦА ТОВАРА ---
-    if (isProductPage) {
+    const productTitle = document.querySelector(SELECTORS.source.title);
+    if (productTitle) {
         const startBtn = document.getElementById('my-start-btn');
         const pasteBtn = document.getElementById('my-paste-btn');
         if (startBtn) startBtn.remove();
